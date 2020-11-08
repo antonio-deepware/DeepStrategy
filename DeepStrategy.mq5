@@ -3,6 +3,11 @@
 //|                                     Copyright 2020, Deepware Srl |
 //|                                          https://www.deepware.it |
 //+------------------------------------------------------------------+
+
+//--- inputs for expert
+input string             Expert_Title         ="DeepStrategy";  // Document name
+ulong                    Expert_MagicNumber   =26850;          // Magic Namber
+
 //--- input parameters
 input group "STOC Params";
 input int      fast_stoc_slowing=1;
@@ -86,8 +91,8 @@ void OnTick()
    double rsi_value_0 = iIndicatorGetValue(stoc_slow_handle,0);      // RSI last value
    double rsi_value_1 = iIndicatorGetValue(stoc_slow_handle,1);      // RSI previous value
    
-   bool stoc_sell_zone = (stoc_fast_0 < oversold_th) && (stoc_slow_0 < oversold_th) && (stoc_fast_1 < oversold_th) && (stoc_slow_1 < oversold_th);
-   bool stoc_buy_zone =  (stoc_fast_0 > overbought_th) && (stoc_slow_0 > overbought_th) && (stoc_fast_1 > overbought_th) && (stoc_slow_1 > overbought_th);
+   bool stoc_buy_zone = (stoc_fast_0 < oversold_th) && (stoc_slow_0 < oversold_th) && (stoc_fast_1 < oversold_th) && (stoc_slow_1 < oversold_th);
+   bool stoc_sell_zone =  (stoc_fast_0 > overbought_th) && (stoc_slow_0 > overbought_th) && (stoc_fast_1 > overbought_th) && (stoc_slow_1 > overbought_th);
    
    bool stoc_buy  = (stoc_fast_0 < stoc_slow_0) && (stoc_fast_1 > stoc_slow_1);
    bool stoc_sell = (stoc_fast_0 > stoc_slow_0) && (stoc_fast_1 < stoc_slow_1);
@@ -105,20 +110,82 @@ void OnTick()
       PrintFormat("[EA] SELL rsi_value_0 %f rsi_value_1 %f",rsi_value_0,rsi_value_1);
       */
    
-/*
+
    if (  stoc_buy_zone
          && stoc_buy 
-         //&& rsi_buy
+         && PositionsTotal()==0
       )
-      PrintFormat("[EA] BUY stoc_fast_0: %f stoc_slow_0: %f stoc_fast_1: %f stoc_slow_1: %f",stoc_fast_0,stoc_slow_0,stoc_fast_1,stoc_slow_1);
+      {
+         // LONG
+         
+         //double sl=iLow(NULL,0,1);
+         //double tp = price_value + (((int)((price_value - sl)/point)*2)*point);
+         double sl=0;
+         double tp=0;
+         
+         OpenPosition(Expert_MagicNumber, ORDER_TYPE_BUY,sl,tp,"[EA] Enter Buy");
+         PrintFormat("[EA] long: stoc_fast_0: %f stoc_slow_0: %f stoc_fast_1: %f stoc_slow_1: %f",stoc_fast_0,stoc_slow_0,stoc_fast_1,stoc_slow_1);
+      }
+      
       
    if (  stoc_sell_zone 
          && stoc_sell
-         //&& rsi_sell
+         && PositionsTotal()==0
       )
-      PrintFormat("[EA] BUY stoc_fast_0: %f stoc_slow_0: %f stoc_fast_1: %f stoc_slow_1: %f",stoc_fast_0,stoc_slow_0,stoc_fast_1,stoc_slow_1);
-*/
+      {
+      
+         // SHORT
+         //double sl=iHigh(NULL,0,1);
+         //double tp = price_value - (((int)((sl - price_value)/point)*2)*point);
+         double sl=0;
+         double tp=0;
+         
+         OpenPosition(Expert_MagicNumber, ORDER_TYPE_SELL,sl,tp,"[EA] Enter Sell");
+         PrintFormat("[EA] short: stoc_fast_0: %f stoc_slow_0: %f stoc_fast_1: %f stoc_slow_1: %f",stoc_fast_0,stoc_slow_0,stoc_fast_1,stoc_slow_1);
+      }
+      
+      // Check if open position must be closed!
+      int total_pos=PositionsTotal();
 
+      for(int i=total_pos-1; i>=0; i--)
+      {
+      
+            ulong ticket=PositionGetTicket(i);
+            
+            PositionSelectByTicket(ticket);
+            
+            ENUM_POSITION_TYPE type=(ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);    // type of the position
+            ulong  magic=PositionGetInteger(POSITION_MAGIC);                                  // MagicNumber of the position
+            
+            if(magic!=Expert_MagicNumber)
+            {
+                  break;
+            }
+            
+            if(type==POSITION_TYPE_BUY)
+            {
+                  if(stoc_sell_zone||stoc_sell)
+                  {
+                        ClosePosition(Expert_MagicNumber, ticket, "[EA] Close BUY");
+                        PrintFormat("[EA] close long: stoc_fast_0: %f stoc_slow_0: %f stoc_fast_1: %f stoc_slow_1: %f",stoc_fast_0,stoc_slow_0,stoc_fast_1,stoc_slow_1);
+                  }
+                 
+            }else if(type==POSITION_TYPE_SELL)
+            {
+                  if(stoc_buy_zone||stoc_buy)
+                  {
+                        ClosePosition(Expert_MagicNumber, ticket, "[EA] Close SELL");
+                        PrintFormat("[EA] close short: stoc_fast_0: %f stoc_slow_0: %f stoc_fast_1: %f stoc_slow_1: %f",stoc_fast_0,stoc_slow_0,stoc_fast_1,stoc_slow_1);
+                  }
+                        
+                  
+            }else
+            {
+                  PrintFormat("[EA] Invalid position Type. Ticket: #%I64d",ticket);
+                  return;
+            }
+                  
+            }
 
    
   }
@@ -303,11 +370,8 @@ bool OpenPosition(long const magic_number, ENUM_ORDER_TYPE typeOrder, double sl,
 bool ClosePosition(long const magic_number, ulong  position_ticket, string order_comment)
 {
 
-      if(PositionSelectByTicket(position_ticket))
-      {
-         Print("[EA] PositionSelectByTicket Error");
-         return false;
-      }
+      PositionSelectByTicket(position_ticket);
+
       double point=SymbolInfoDouble(Symbol(),SYMBOL_POINT);         // point
       
       double volume=PositionGetDouble(POSITION_VOLUME);
