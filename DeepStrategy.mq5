@@ -5,29 +5,29 @@
 //+------------------------------------------------------------------+
 
 //--- inputs for expert
-input string             Expert_Title         ="DeepStrategy";  // Document name
-ulong                    Expert_MagicNumber   =26850;          // Magic Namber
+input string             Expert_Title           = "DeepStrategy";  // Document name
+ulong                    Expert_MagicNumber     = 26850;          // Magic Namber
 
 //--- input parameters
 input group "STOC Params";
-input int      fast_stoc_slowing=1;
-input int      slow_stoc_slowing=3;
+input int               fast_stoc_slowing       = 1;
+input int               slow_stoc_slowing       = 3;
 
 input group "Market thresholds";
-input int      overbought_th=80;
-input int      oversold_th=20;
+input int               overbought_th           = 80;
+input int               oversold_th             = 20;
 
 input group "RSI Params";
-input int      rsi_period=14;
+input int               rsi_period              = 14;
 
 input group "Market Time";
-input int StartTime = 7;                                       // Time to allow trading to start
-input int EndTime = 20;                                        // Time to stop trading
+input int               StartTime               = 7;                                       // Time to allow trading to start
+input int               EndTime                 = 20;                                        // Time to stop trading
 
 //--- inputs for money
 input group "Money";
-input double             Money_FixLot_Percent =10.0;           // Percent
-input double             Money_FixLot_Lots    =0.1;            // Fixed volume
+input double             Money_FixLot_Percent   = 10.0;           // Percent
+input double             Money_FixLot_Lots      = 0.1;            // Fixed volume
 
 #define RET_OK     0
 #define RET_NOK    -1
@@ -88,8 +88,8 @@ void OnTick()
    double stoc_fast_1 = iIndicatorGetValue(stoc_fast_handle,1);      // stochastic fast previous value
    double stoc_slow_1 = iIndicatorGetValue(stoc_slow_handle,1);      // stochastic slow previous value
    
-   double rsi_value_0 = iIndicatorGetValue(stoc_slow_handle,0);      // RSI last value
-   double rsi_value_1 = iIndicatorGetValue(stoc_slow_handle,1);      // RSI previous value
+   double rsi_value_0 = iIndicatorGetValue(rsi_handle,0);      // RSI last value
+   double rsi_value_1 = iIndicatorGetValue(rsi_handle,1);      // RSI previous value
    
    bool stoc_buy_zone = (stoc_fast_0 < oversold_th) && (stoc_slow_0 < oversold_th) && (stoc_fast_1 < oversold_th) && (stoc_slow_1 < oversold_th);
    bool stoc_sell_zone =  (stoc_fast_0 > overbought_th) && (stoc_slow_0 > overbought_th) && (stoc_fast_1 > overbought_th) && (stoc_slow_1 > overbought_th);
